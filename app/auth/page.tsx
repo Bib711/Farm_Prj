@@ -28,36 +28,36 @@ export default function AuthPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
+  
     // Simulate API call
     setTimeout(() => {
       const result = authenticate(email, password)
-
-      if (result.success) {
+  
+      if (result.success && result.user) {
         toast({
           title: "Login successful",
           description: `Welcome back, ${result.user.name}!`,
         })
-
+  
         // Redirect based on role
-        if (result.user.role === "farmer") {
-          router.push("/dashboard")
-        } else if (result.user.role === "admin") {
-          router.push("/dashboard")
-        } else {
-          router.push("/marketplace")
-        }
+        const destination = 
+          result.user.role === "farmer" || result.user.role === "admin"
+            ? "/dashboard"
+            : "/marketplace"
+  
+        router.push(destination)
       } else {
         toast({
           title: "Login failed",
-          description: result.error,
+          description: result.error || "An unexpected error occurred",
           variant: "destructive",
         })
       }
-
+  
       setIsLoading(false)
     }, 1500)
   }
+  
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted dark:from-background dark:to-gray-900">

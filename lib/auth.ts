@@ -1,3 +1,8 @@
+// lib/auth.ts
+// This is a mock authentication service for demonstration purposes
+// In a real application, you would use a proper authentication system
+
+// Sample user credentials
 export const sampleUsers = [
   {
     id: "user-1",
@@ -24,9 +29,23 @@ export const sampleUsers = [
 
 // Mock authentication function
 export const authenticate = (email: string, password: string) => {
-  const user = sampleUsers.find((user) => user.email === email && user.password === password)
-
+  console.log("Authenticating:", email, password) // For debugging
+  
+  const user = sampleUsers.find(
+    (user) => user.email === email && user.password === password
+  )
+  
   if (user) {
+    // Store user in localStorage for persistence
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentUser', JSON.stringify({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      }))
+    }
+    
     return {
       success: true,
       user: {
@@ -37,10 +56,27 @@ export const authenticate = (email: string, password: string) => {
       },
     }
   }
-
+  
   return {
     success: false,
     error: "Invalid email or password",
   }
 }
 
+// Get current user from localStorage
+export const getCurrentUser = () => {
+  if (typeof window !== 'undefined') {
+    const userJson = localStorage.getItem('currentUser')
+    if (userJson) {
+      return JSON.parse(userJson)
+    }
+  }
+  return null
+}
+
+// Logout function
+export const logout = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('currentUser')
+  }
+}
