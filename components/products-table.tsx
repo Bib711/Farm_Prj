@@ -1,3 +1,4 @@
+// marketPage.tsx
 "use client"
 
 import { useState } from "react"
@@ -29,8 +30,9 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
+// Assuming you have product data already fetched
 type Product = {
-  id: string
+  id: number
   name: string
   category: string
   price: number
@@ -40,85 +42,70 @@ type Product = {
 
 const data: Product[] = [
   {
-    id: "PROD-1",
-    name: "Organic Tomatoes",
-    category: "Vegetables",
+    id: 1,
+    name: "Organic Tomato Seeds",
+    category: "Seeds",
     price: 4.99,
     quantity: 120,
     status: "In Stock",
   },
   {
-    id: "PROD-2",
-    name: "Fresh Lettuce",
-    category: "Vegetables",
-    price: 2.49,
-    quantity: 85,
+    id: 2,
+    name: "Natural Fertilizer",
+    category: "Fertilizers",
+    price: 19.99,
+    quantity: 80,
     status: "In Stock",
   },
   {
-    id: "PROD-3",
-    name: "Organic Carrots",
-    category: "Vegetables",
-    price: 3.29,
-    quantity: 65,
+    id: 3,
+    name: "Garden Trowel Set",
+    category: "Equipment",
+    price: 24.99,
+    quantity: 50,
     status: "In Stock",
   },
   {
-    id: "PROD-4",
-    name: "Free-Range Eggs",
-    category: "Dairy & Eggs",
-    price: 5.99,
-    quantity: 48,
-    status: "In Stock",
-  },
-  {
-    id: "PROD-5",
-    name: "Organic Strawberries",
-    category: "Fruits",
-    price: 6.99,
-    quantity: 32,
-    status: "Low Stock",
-  },
-  {
-    id: "PROD-6",
-    name: "Grass-Fed Beef",
-    category: "Meat",
-    price: 12.99,
-    quantity: 15,
-    status: "Low Stock",
-  },
-  {
-    id: "PROD-7",
-    name: "Organic Honey",
-    category: "Specialty",
-    price: 8.49,
-    quantity: 25,
-    status: "In Stock",
-  },
-  {
-    id: "PROD-8",
-    name: "Heirloom Tomato Seeds",
+    id: 4,
+    name: "Heirloom Carrot Seeds",
     category: "Seeds",
     price: 3.99,
+    quantity: 200,
+    status: "In Stock",
+  },
+  {
+    id: 5,
+    name: "Organic Pest Control",
+    category: "Pesticides",
+    price: 14.99,
     quantity: 0,
     status: "Out of Stock",
   },
   {
-    id: "PROD-9",
-    name: "Organic Potatoes",
-    category: "Vegetables",
-    price: 4.49,
-    quantity: 110,
+    id: 6,
+    name: "Pruning Shears",
+    category: "Equipment",
+    price: 18.99,
+    quantity: 0,
+    status: "Out of Stock",
+  },
+  {
+    id: 7,
+    name: "Herb Garden Kit",
+    category: "Seeds",
+    price: 29.99,
+    quantity: 150,
     status: "In Stock",
   },
   {
-    id: "PROD-10",
-    name: "Fresh Basil",
-    category: "Herbs",
-    price: 2.99,
-    quantity: 5,
+    id: 8,
+    name: "Compost Bin",
+    category: "Equipment",
+    price: 34.99,
+    quantity: 15,
     status: "Low Stock",
   },
+  // other products...
 ]
 
 export const columns: ColumnDef<Product>[] = [
@@ -127,14 +114,14 @@ export const columns: ColumnDef<Product>[] = [
     header: ({ table }) => (
       <Checkbox
         checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        onCheckedChange={(value:boolean) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onCheckedChange={(value:boolean) => row.toggleSelected(!!value)}
         aria-label="Select row"
       />
     ),
@@ -206,13 +193,13 @@ export const columns: ColumnDef<Product>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(product.id)}>
+            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(product.id.toString())}>
               Copy product ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Edit product</DropdownMenuItem>
+            {/*<DropdownMenuItem>Edit product</DropdownMenuItem>
             <DropdownMenuItem>Update inventory</DropdownMenuItem>
-            <DropdownMenuItem>View sales history</DropdownMenuItem>
+            <DropdownMenuItem>View sales history</DropdownMenuItem>*/}
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -220,10 +207,9 @@ export const columns: ColumnDef<Product>[] = [
   },
 ]
 
-export function ProductsTable() {
+export function MarketPage() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [rowSelection, setRowSelection] = useState({})
 
   const table = useReactTable({
     data,
@@ -234,11 +220,9 @@ export function ProductsTable() {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
-      rowSelection,
     },
   })
 
@@ -267,7 +251,7 @@ export function ProductsTable() {
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    onCheckedChange={(value:boolean) => column.toggleVisibility(!!value)}
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
@@ -332,4 +316,3 @@ export function ProductsTable() {
     </div>
   )
 }
-

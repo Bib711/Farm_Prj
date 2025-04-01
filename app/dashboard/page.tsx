@@ -9,7 +9,7 @@ import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { Overview } from "@/components/overview"
 import { RecentSales } from "@/components/recent-sales"
-import { ProductsTable } from "@/components/products-table"
+import { MarketPage } from "@/components/products-table"
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -326,7 +326,7 @@ export default function DashboardPage() {
               <CardDescription>Manage your product inventory and availability</CardDescription>
             </CardHeader>
             <CardContent>
-              <ProductsTable />
+              <MarketPage />
             </CardContent>
           </Card>
         </TabsContent>
