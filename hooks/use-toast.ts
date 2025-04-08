@@ -7,6 +7,7 @@ type ToastProps = {
   title: string
   description?: string
   variant?: ToastVariant
+  action?: React.ReactNode
 }
 
 type ToastWithId = ToastProps & { id: string }

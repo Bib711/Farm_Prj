@@ -2,16 +2,26 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Download, Leaf, Loader2, ShoppingCart, Upload } from "lucide-react"
+import { ArrowLeft, Download, Leaf, Loader2, ShoppingCart, Upload, AlertCircle, Info } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number | string;
+  category: string;
+  inventory: number;
+  imageUrl?: string;
+  farmer_id: string;
+}
 
 export default function AIDetectionPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -19,6 +29,55 @@ export default function AIDetectionPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisComplete, setAnalysisComplete] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null)
+  const [isMockResponse, setIsMockResponse] = useState(false)
+  const [analysisStructured, setAnalysisStructured] = useState<{
+    plantIdentification: string | null;
+    healthAssessment: string | null;
+    specificCondition: string | null;
+    severityLevel: string | null;
+    treatments: string | null;
+    preventionTips: string | null;
+    nutritionalRecommendations: string | null;
+    recoveryTime: string | null;
+  }>({
+    plantIdentification: null,
+    healthAssessment: null,
+    specificCondition: null,
+    severityLevel: null,
+    treatments: null,
+    preventionTips: null,
+    nutritionalRecommendations: null,
+    recoveryTime: null
+  })
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/products/1`);
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch product");
+        }
+        
+        const data = await response.json();
+        console.log("Product data:", data);
+        console.log(`Product price: ${data.price}, type: ${typeof data.price}`);
+        
+        setProduct(data);
+      } catch (err) {
+        console.error("Error fetching product:", err);
+        setError("Failed to load product. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -33,6 +92,17 @@ export default function AIDetectionPage() {
 
       // Reset states
       setAnalysisComplete(false)
+      setAnalysisResult(null)
+      setAnalysisStructured({
+        plantIdentification: null,
+        healthAssessment: null,
+        specificCondition: null,
+        severityLevel: null,
+        treatments: null,
+        preventionTips: null,
+        nutritionalRecommendations: null,
+        recoveryTime: null
+      })
       setProgress(0)
     }
   }
@@ -51,6 +121,17 @@ export default function AIDetectionPage() {
 
       // Reset states
       setAnalysisComplete(false)
+      setAnalysisResult(null)
+      setAnalysisStructured({
+        plantIdentification: null,
+        healthAssessment: null,
+        specificCondition: null,
+        severityLevel: null,
+        treatments: null,
+        preventionTips: null,
+        nutritionalRecommendations: null,
+        recoveryTime: null
+      })
       setProgress(0)
     }
   }
@@ -59,22 +140,121 @@ export default function AIDetectionPage() {
     e.preventDefault()
   }
 
-  const analyzeImage = () => {
-    setIsAnalyzing(true)
-    setProgress(0)
+  const analyzeImage = async () => {
+    if (!preview) return;
 
-    // Simulate analysis progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsAnalyzing(false)
-          setAnalysisComplete(true)
-          return 100
-        }
-        return prev + 10
-      })
-    }, 500)
+    setIsAnalyzing(true);
+    setProgress(0);
+    setError(null);
+    setIsMockResponse(false);
+
+    try {
+      // Extract base64 data from the data URL
+      const base64Data = preview.split(',')[1];
+      
+      // Start progress animation
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 95) {
+            return 95; // Stay at 95% until we get response
+          }
+          return prev + 5;
+        });
+      }, 300);
+
+      // Call our API endpoint
+      const response = await fetch('/api/ai-detection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageBase64: base64Data }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok && !data.analysis) {
+        const errorMessage = data.error || 'Failed to analyze image';
+        throw new Error(errorMessage);
+      }
+
+      // Set mock response flag if the server indicated it's a mock response
+      setIsMockResponse(data.isMockResponse || false);
+      
+      // Set analysis result
+      setAnalysisResult(data.analysis);
+      
+      // Process structured data
+      processAnalysisResult(data.analysis);
+      
+      setProgress(100);
+      setAnalysisComplete(true);
+      clearInterval(interval);
+    } catch (err) {
+      console.error('Analysis error:', err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setProgress(0);
+      setAnalysisComplete(false);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+  
+  const processAnalysisResult = (analysisText: string) => {
+    if (!analysisText) return;
+    
+    const structured = {
+      plantIdentification: extractSection(analysisText, "Plant Identification"),
+      healthAssessment: extractSection(analysisText, "Health Assessment"),
+      specificCondition: extractSection(analysisText, "Specific Condition"),
+      severityLevel: extractSection(analysisText, "Severity Level"),
+      treatments: extractSection(analysisText, "Recommended Treatments"),
+      preventionTips: extractSection(analysisText, "Prevention Tips"),
+      nutritionalRecommendations: extractSection(analysisText, "Nutritional Recommendations"),
+      recoveryTime: extractSection(analysisText, "Expected Recovery Time")
+    };
+    
+    setAnalysisStructured(structured);
+  };
+  
+  const extractSection = (text: string, sectionName: string): string | null => {
+    const regex = new RegExp(`${sectionName}[:\\s]+(.*?)(?=\\d+\\.\\s+[A-Z]|$)`, 's');
+    const match = text.match(regex);
+    return match ? match[1].trim() : null;
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>Product not found</AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
@@ -188,97 +368,95 @@ export default function AIDetectionPage() {
                 </div>
 
                 {analysisComplete && (
-                  <div className="space-y-4">
-                    <div className="bg-primary/10 p-4 rounded-lg">
-                      <h3 className="font-medium text-lg mb-2">Analysis Results</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-sm font-medium">Detected Issue:</p>
-                          <p className="text-lg font-bold text-destructive">Powdery Mildew</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Confidence:</p>
-                          <p className="text-lg font-bold">92%</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Affected Area:</p>
-                          <p className="text-lg font-bold">Leaves</p>
+                  <div className="mt-6">
+                    {isMockResponse && (
+                      <div className="mb-4 p-3 bg-yellow-50 text-yellow-800 rounded-md border border-yellow-200">
+                        <div className="flex items-center">
+                          <Info className="h-5 w-5 mr-2" />
+                          <p className="text-sm font-medium">
+                            Note: Due to API rate limits, you're seeing a sample analysis. This is example data for testing purposes.
+                          </p>
                         </div>
                       </div>
-                    </div>
-
-                    <Tabs defaultValue="treatment">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="treatment">Treatment</TabsTrigger>
-                        <TabsTrigger value="prevention">Prevention</TabsTrigger>
-                        <TabsTrigger value="products">Products</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="treatment" className="space-y-4 mt-4">
-                        <Alert>
-                          <Leaf className="h-4 w-4" />
-                          <AlertTitle>Recommended Treatment</AlertTitle>
-                          <AlertDescription>
-                            <ul className="list-disc pl-5 space-y-1 mt-2">
-                              <li>Remove and destroy affected leaves</li>
-                              <li>Apply fungicide specifically designed for powdery mildew</li>
-                              <li>Ensure proper air circulation around plants</li>
-                              <li>Avoid overhead watering to keep foliage dry</li>
-                            </ul>
-                          </AlertDescription>
-                        </Alert>
-                        <Button className="w-full">
-                          <Download className="mr-2 h-4 w-4" />
-                          Download Full Report
-                        </Button>
-                      </TabsContent>
-                      <TabsContent value="prevention" className="space-y-4 mt-4">
-                        <Alert>
-                          <Leaf className="h-4 w-4" />
-                          <AlertTitle>Prevention Tips</AlertTitle>
-                          <AlertDescription>
-                            <ul className="list-disc pl-5 space-y-1 mt-2">
-                              <li>Plant resistant varieties when possible</li>
-                              <li>Ensure proper spacing between plants for good air circulation</li>
-                              <li>Water at the base of plants, not on foliage</li>
-                              <li>Apply preventative fungicides during humid weather</li>
-                              <li>Maintain proper soil nutrition</li>
-                            </ul>
-                          </AlertDescription>
-                        </Alert>
-                      </TabsContent>
-                      <TabsContent value="products" className="space-y-4 mt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <Card>
-                            <CardHeader className="p-4">
-                              <CardTitle className="text-base">Organic Fungicide</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                              <p className="text-sm text-muted-foreground">Natural solution for powdery mildew</p>
-                              <p className="font-bold mt-2">$14.99</p>
-                            </CardContent>
-                            <CardFooter className="p-4 pt-0">
-                              <Button size="sm" className="w-full">
-                                View Product
-                              </Button>
-                            </CardFooter>
-                          </Card>
-                          <Card>
-                            <CardHeader className="p-4">
-                              <CardTitle className="text-base">Plant Nutrient Booster</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                              <p className="text-sm text-muted-foreground">Strengthens plant immune system</p>
-                              <p className="font-bold mt-2">$19.99</p>
-                            </CardContent>
-                            <CardFooter className="p-4 pt-0">
-                              <Button size="sm" className="w-full">
-                                View Product
-                              </Button>
-                            </CardFooter>
-                          </Card>
+                    )}
+                    <div className="p-4 bg-muted/30 rounded-md mt-2">
+                      <h3 className="font-medium mb-4">Plant Analysis Results</h3>
+                      
+                      {analysisStructured.plantIdentification && (
+                        <div className="mb-4 p-3 bg-background rounded-md border">
+                          <h4 className="text-sm font-semibold text-primary">Plant Identification</h4>
+                          <p className="mt-1 text-sm">{analysisStructured.plantIdentification}</p>
                         </div>
-                      </TabsContent>
-                    </Tabs>
+                      )}
+                      
+                      {analysisStructured.healthAssessment && (
+                        <div className="mb-4 p-3 bg-background rounded-md border">
+                          <h4 className="text-sm font-semibold text-primary">Health Assessment</h4>
+                          <p className="mt-1 text-sm">{analysisStructured.healthAssessment}</p>
+                        </div>
+                      )}
+                      
+                      {analysisStructured.specificCondition && (
+                        <div className="mb-4 p-3 bg-background rounded-md border">
+                          <h4 className="text-sm font-semibold text-primary">Specific Condition</h4>
+                          <p className="mt-1 text-sm">{analysisStructured.specificCondition}</p>
+                        </div>
+                      )}
+                      
+                      {analysisStructured.severityLevel && (
+                        <div className="mb-4 p-3 bg-background rounded-md border">
+                          <h4 className="text-sm font-semibold text-primary">Severity Level</h4>
+                          <p className="mt-1 text-sm">{analysisStructured.severityLevel}</p>
+                        </div>
+                      )}
+                      
+                      {analysisStructured.treatments && (
+                        <div className="mb-4 p-3 bg-background rounded-md border">
+                          <h4 className="text-sm font-semibold text-primary">Recommended Treatments</h4>
+                          <p className="mt-1 text-sm whitespace-pre-wrap">{analysisStructured.treatments}</p>
+                        </div>
+                      )}
+                      
+                      {analysisStructured.preventionTips && (
+                        <div className="mb-4 p-3 bg-background rounded-md border">
+                          <h4 className="text-sm font-semibold text-primary">Prevention Tips</h4>
+                          <p className="mt-1 text-sm whitespace-pre-wrap">{analysisStructured.preventionTips}</p>
+                        </div>
+                      )}
+                      
+                      {analysisStructured.nutritionalRecommendations && (
+                        <div className="mb-4 p-3 bg-background rounded-md border">
+                          <h4 className="text-sm font-semibold text-primary">Nutritional Recommendations</h4>
+                          <p className="mt-1 text-sm">{analysisStructured.nutritionalRecommendations}</p>
+                        </div>
+                      )}
+                      
+                      {analysisStructured.recoveryTime && (
+                        <div className="mb-4 p-3 bg-background rounded-md border">
+                          <h4 className="text-sm font-semibold text-primary">Expected Recovery Time</h4>
+                          <p className="mt-1 text-sm">{analysisStructured.recoveryTime}</p>
+                        </div>
+                      )}
+                      
+                      {!analysisStructured.plantIdentification && analysisResult && (
+                        <div className="text-sm whitespace-pre-wrap">
+                          <div dangerouslySetInnerHTML={{ __html: analysisResult.replace(/\n/g, '<br />') }} />
+                        </div>
+                      )}
+                      
+                      {!analysisResult && (
+                        <div className="text-muted-foreground">
+                          <p>No analysis results available.</p>
+                        </div>
+                      )}
+                      
+                      <div className="mt-4">
+                        <Button variant="outline" className="w-full" onClick={() => window.print()}>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download Analysis Report
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -327,4 +505,3 @@ export default function AIDetectionPage() {
     </div>
   )
 }
-

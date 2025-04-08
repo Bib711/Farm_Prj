@@ -15,9 +15,9 @@ export function middleware(request: NextRequest) {
   // Get the token from the cookies
   const token = request.cookies.get('token')?.value;
 
-  // If the path is public and user is logged in,
-  // redirect to dashboard
-  if (isPublicPath && token) {
+  // Only redirect login/register pages to dashboard if user is already logged in
+  // Allow users to access the landing page (/) even when logged in
+  if ((path === '/auth/login' || path === '/auth/register') && token) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -35,6 +35,7 @@ export const config = {
     '/dashboard/:path*',
     '/marketplace/:path*',
     '/auth/:path*',
-    '/api/auth/me',
+    // Exclude API routes from middleware to prevent redirect loops
+    // '/api/auth/me',
   ],
 };

@@ -19,6 +19,10 @@ export default function EditProductPage() {
           throw new Error('Failed to fetch product');
         }
         const data = await response.json();
+        // Ensure price is a number
+        if (typeof data.price === 'string') {
+          data.price = parseFloat(data.price);
+        }
         setProduct(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch product');

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowUpRight, Leaf, Plus, Upload } from "lucide-react"
+import { DashboardClientWrapper } from "@/components/dashboard-client-wrapper"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
+    <DashboardClientWrapper>
     <DashboardShell>
       <DashboardHeader heading="Dashboard" text="Manage your farm products and inventory">
         <div className="flex items-center gap-2">
@@ -25,9 +27,11 @@ export default function DashboardPage() {
             <Upload className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
+          <Button size="sm" asChild>
+            <Link href="/dashboard/products/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Product
+            </Link>
           </Button>
         </div>
       </DashboardHeader>
@@ -345,6 +349,7 @@ export default function DashboardPage() {
         </TabsContent>
       </Tabs>
     </DashboardShell>
+    </DashboardClientWrapper>
   )
 }
 

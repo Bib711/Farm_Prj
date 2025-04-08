@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { BarChart3, Home, Leaf, Package, Settings, ShoppingCart, Upload, User, Video } from "lucide-react"
 import Link from "next/link"
+import { UserDropdown } from "@/components/user-dropdown"
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -33,6 +34,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
               </Link>
             </div>
             <div className="flex items-center gap-4">
+              <UserDropdown />
               <SidebarTrigger />
             </div>
           </div>
@@ -71,7 +73,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild>
-                        <Link href="#">
+                        <Link href="/dashboard/products">
                           <Package className="h-4 w-4" />
                           <span>Products</span>
                         </Link>
@@ -139,4 +141,3 @@ export function DashboardShell({ children }: DashboardShellProps) {
     </SidebarProvider>
   )
 }
-

@@ -5,64 +5,84 @@ import pool from '@/lib/db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'farmmarket';
 
+// Helper function to ensure proper JSON responses
+function jsonResponse(data: any, status = 200) {
+  return new NextResponse(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
+  });
+}
+
+// Handle OPTIONS requests (CORS preflight)
+export async function OPTIONS() {
+  return jsonResponse({});
+}
+
 export async function POST(req: Request) {
+  console.log('Login API called');
   try {
     const { email, password } = await req.json();
 
     // Validate input
+    console.log('Validating login inputs');
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      console.log('Missing required fields');
+      return jsonResponse({ error: 'Missing required fields' }, 400);
     }
 
     // Find user
-    const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
-
-    const user = result.rows[0];
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
+    console.log(`Attempting to find user with email: ${email}`);
+    try {
+      const result = await pool.query(
+        'SELECT * FROM users WHERE email = $1',
+        [email]
       );
-    }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+      const user = result.rows[0];
+      console.log('User found:', user ? 'Yes' : 'No');
 
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
-    }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    return NextResponse.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
+      if (!user) {
+        return jsonResponse({ error: 'Invalid credentials' }, 401);
       }
-    });
+
+      // Verify password
+      console.log('Verifying password');
+      const isValidPassword = await bcrypt.compare(password, user.password);
+
+      if (!isValidPassword) {
+        console.log('Invalid password');
+        return jsonResponse({ error: 'Invalid credentials' }, 401);
+      }
+
+      // Generate JWT token
+      console.log('Generating JWT token');
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      console.log('Login successful');
+      return jsonResponse({
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      });
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      return jsonResponse({ error: 'Database error' }, 500);
+    }
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return jsonResponse({ error: 'Internal server error' }, 500);
   }
 }

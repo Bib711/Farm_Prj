@@ -21,14 +21,39 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
     try {
-      await register(
-        formData.name,
-        formData.email,
-        formData.password,
-        formData.role
-      );
+      // Make a direct fetch to the registration API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(formData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Registration failed' }));
+        throw new Error(errorData.error || `Registration failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Registration successful, received data:', data);
+      
+      // Store token in both localStorage and cookies
+      localStorage.setItem('token', data.token);
+      
+      // Set a cookie for the middleware
+      document.cookie = `token=${data.token}; path=/; max-age=${60*60*24}; SameSite=Strict`;
+      
+      // Force navigation to dashboard
+      console.log('Redirecting to dashboard after registration...');
+      window.location.href = '/dashboard';
+      
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'Registration failed');
     }
   };
