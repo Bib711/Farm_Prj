@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import pool from '@/lib/db';
+import pool from '@/app/api/auth/db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'farmmarket';
 
@@ -12,44 +12,47 @@ export async function POST(req: Request) {
     // Validate input
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Email and password are required.' },
         { status: 400 }
       );
     }
 
-    // Find user
+    // Find user in database by email
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
+      'SELECT id, name, email, password, role FROM users WHERE email = $1',
       [email]
     );
 
     const user = result.rows[0];
 
+    // If user is not found
     if (!user) {
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: 'Invalid username or password' },
         { status: 401 }
       );
     }
 
-    // Verify password
+    // Verify password against the hash
     const isValidPassword = await bcrypt.compare(password, user.password);
 
+    // If password is incorrect
     if (!isValidPassword) {
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: 'Invalid username or password' },
         { status: 401 }
       );
     }
 
-    // Generate JWT token
+    // Generate JWT token with expiration (24 hours)
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    return NextResponse.json({
+    // Set JWT token as cookie
+    const response = NextResponse.json({
       token,
       user: {
         id: user.id,
@@ -58,6 +61,9 @@ export async function POST(req: Request) {
         role: user.role
       }
     });
+    response.headers.set('Set-Cookie', `token=${token}; Path=/; HttpOnly; Max-Age=86400`);
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

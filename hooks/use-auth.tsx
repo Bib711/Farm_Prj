@@ -1,5 +1,8 @@
+
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: number;
@@ -22,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     checkAuth();
@@ -29,18 +33,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1];
+
       if (token) {
         const response = await fetch('/api/auth/me', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
         } else {
-          localStorage.removeItem('token');
+          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'; // Delete token
           setUser(null);
         }
       }
@@ -65,12 +74,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.error || 'Login failed');
       }
 
-      localStorage.setItem('token', data.token);
+      document.cookie = `token=${data.token}; path=/; max-age=86400`; // Set token in cookie
       setUser(data.user);
       router.push('/dashboard');
+      toast({
+        title: 'Login successful',
+        description: 'You are now logged in.',
+      });
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
+      toast({
+        title: 'Login failed',
+        description: error instanceof Error ? error.message : 'Something went wrong',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -88,17 +105,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.error || 'Registration failed');
       }
 
-      localStorage.setItem('token', data.token);
+      document.cookie = `token=${data.token}; path=/; max-age=86400`; // Set token in cookie
       setUser(data.user);
       router.push('/dashboard');
+      toast({
+        title: 'Registration successful',
+        description: 'You are now registered and logged in.',
+      });
     } catch (error) {
       console.error('Registration error:', error);
-      throw error;
+      toast({
+        title: 'Registration failed',
+        description: error instanceof Error ? error.message : 'Something went wrong',
+        variant: 'destructive',
+      });
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'; // Delete token
     setUser(null);
     router.push('/auth/login');
   };

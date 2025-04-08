@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import pool from '@/lib/db';
+import pool from '@/app/api/auth/db'; // Correct import for the db connection
 
 const JWT_SECRET = process.env.JWT_SECRET || 'farmmarket';
 
 export async function GET(req: Request) {
   try {
-    // Get token from header
     const authHeader = req.headers.get('authorization');
-    
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'No token provided' },
@@ -21,7 +19,7 @@ export async function GET(req: Request) {
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
 
-    // Get user from database
+    // Fetch user data from the database
     const result = await pool.query(
       'SELECT id, name, email, role FROM users WHERE id = $1',
       [decoded.userId]

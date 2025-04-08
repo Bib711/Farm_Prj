@@ -1,4 +1,5 @@
 import type React from "react"
+import { Button } from "@/components/ui/button"
 import {
   SidebarProvider,
   Sidebar,
@@ -28,10 +29,17 @@ export function DashboardShell({ children }: DashboardShellProps) {
           <div className="container flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
               <Link href="/" className="flex items-center space-x-2">
-                <ShoppingCart className="h-6 w-6 text-primary" />
-                <span className="font-bold text-xl">FarmMarket</span>
+                  <Button variant="outline" size="sm">
+                    <Upload className="mr-2 h-4 w-4" />
+                      Export
+                  </Button>
               </Link>
             </div>
+            {/*<div className="flex items-center gap-1">
+              <Link href="/auth/login" className="flex  space-x-2">
+                <span className="font-bold text-xl">Logout</span>
+              </Link>
+            </div>*/}
             <div className="flex items-center gap-4">
               <SidebarTrigger />
             </div>
