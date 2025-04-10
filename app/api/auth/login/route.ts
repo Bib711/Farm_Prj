@@ -50,9 +50,18 @@ export async function POST(req: Request) {
         return jsonResponse({ error: 'Invalid credentials' }, 401);
       }
 
-      // Verify password
+      // Check if user is admin
       console.log('Verifying password');
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      let isValidPassword;
+
+      if (user.role === 'admin') {
+        // If the user is admin, do not use bcrypt for password verification (handle it however you want)
+        isValidPassword = password === user.password; // In this case, just a simple equality check
+        console.log('Admin password check: ', isValidPassword);
+      } else {
+        // If not admin, use bcrypt to compare the password
+        isValidPassword = await bcrypt.compare(password, user.password);
+      }
 
       if (!isValidPassword) {
         console.log('Invalid password');

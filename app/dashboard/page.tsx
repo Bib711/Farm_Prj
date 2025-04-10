@@ -1,8 +1,8 @@
-import type { Metadata } from "next"
+"use client"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowUpRight, Leaf, Plus, Upload } from "lucide-react"
+import { ArrowUpRight, Leaf, Plus, Upload, Trash } from "lucide-react"
 import { DashboardClientWrapper } from "@/components/dashboard-client-wrapper"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,38 +11,88 @@ import { DashboardShell } from "@/components/dashboard-shell"
 import { Overview } from "@/components/overview"
 import { RecentSales } from "@/components/recent-sales"
 import { MarketPage } from "@/components/products-table"
+import { metadata } from "./metadata" // Import metadata
 
-export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Manage your farm products and inventory",
+interface User {
+  id: string
+  name: string
+  role: string
+  email: string
 }
 
 export default function DashboardPage() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+
+  const fetchUsers = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch("/api/users") // Replace with your API endpoint for fetching users
+      if (!response.ok) throw new Error("Failed to fetch users")
+      const data = await response.json()
+      setUsers(data.users)
+    } catch (err) {
+      setError("Failed to load users")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch("/api/current-user") // Replace with your API endpoint to fetch current user's info
+      const data = await response.json()
+      setCurrentUser(data.user)
+    } catch (err) {
+      setError("Failed to load user data")
+    }
+  }
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "DELETE",
+      })
+      if (!response.ok) throw new Error("Failed to delete user")
+      setUsers(users.filter((user) => user.id !== userId))
+    } catch (err) {
+      setError("Failed to delete user")
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers()
+    fetchCurrentUser() // Fetch current user info when the component mounts
+  }, [])
+
   return (
     <DashboardClientWrapper>
-    <DashboardShell>
-      <DashboardHeader heading="Dashboard" text="Manage your farm products and inventory">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Upload className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/dashboard/products/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Link>
-          </Button>
-        </div>
-      </DashboardHeader>
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <DashboardShell>
+        <DashboardHeader heading="Dashboard" text="Manage your farm products and inventory">
+          <div className="flex items-center gap-2">
+            
+            <Button size="sm" asChild>
+              <Link href="/dashboard/products/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Link>
+            </Button>
+          </div>
+        </DashboardHeader>
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="products">Products</TabsTrigger>
+            {/* Only render the "Users" tab if the current user is an admin */}
+            {currentUser?.role === "admin" && <TabsTrigger value="users">Users</TabsTrigger>}
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            {/* Overview content */}
+            {/* (Same content as before) */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -322,34 +372,60 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-        <TabsContent value="products" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Products</CardTitle>
-              <CardDescription>Manage your product inventory and availability</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MarketPage />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analytics</CardTitle>
-              <CardDescription>View detailed analytics about your farm products</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px] flex items-center justify-center border rounded-md">
-                <p className="text-muted-foreground">Analytics dashboard coming soon</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </DashboardShell>
+          </TabsContent>
+
+          <TabsContent value="products" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Products</CardTitle>
+                <CardDescription>Manage your product inventory and availability</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MarketPage />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Only render the "Users" tab content if the current user is an admin */}
+          {currentUser?.role === "admin" && (
+            <TabsContent value="users" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Users</CardTitle>
+                  <CardDescription>Manage users on the platform</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading && <p>Loading users...</p>}
+                  {error && <p className="text-red-500">{error}</p>}
+                  <div className="space-y-4">
+                    {users.length === 0 ? (
+                      <p>No users found</p>
+                    ) : (
+                      <ul>
+                        {users.map((user) => (
+                          <li key={user.id} className="flex items-center justify-between p-2 border-b">
+                            <span>
+                              {user.name} - {user.role} - {user.email}
+                            </span>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              <Trash className="h-4 w-4" />
+                              Delete
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
+      </DashboardShell>
     </DashboardClientWrapper>
   )
 }
-

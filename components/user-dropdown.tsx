@@ -44,7 +44,7 @@ export function UserDropdown() {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        {/*<DropdownMenuItem asChild>
           <Link href="/dashboard" className="cursor-pointer flex w-full">
             <User className="mr-2 h-4 w-4" /> Profile
           </Link>
@@ -53,7 +53,7 @@ export function UserDropdown() {
           <Link href="/dashboard/settings" className="cursor-pointer flex w-full">
             <Settings className="mr-2 h-4 w-4" /> Settings
           </Link>
-        </DropdownMenuItem>
+        </DropdownMenuItem>*/}
         <DropdownMenuSeparator />
         <DropdownMenuItem 
           onClick={logout}
