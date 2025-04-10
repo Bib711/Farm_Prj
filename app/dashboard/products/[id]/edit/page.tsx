@@ -5,9 +5,20 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProductForm } from '@/components/product-form';
 
+interface Product {
+  id?: number;
+  name: string;
+  category: string;
+  price: number;
+  image?: string;
+  description?: string;
+  quantity: number;
+  in_stock?: boolean;
+}
+
 export default function EditProductPage() {
   const params = useParams();
-  const [product, setProduct] = useState(null);
+  const [product, setProduct] = useState<Product | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

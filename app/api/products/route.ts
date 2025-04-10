@@ -51,11 +51,12 @@ export async function POST(request: Request) {
     const { name, category, price, image, description, quantity } = await request.json();
 
     // Validate required fields
-    if (!name || !category || !price || !quantity) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Validate required fields
+    if (!name || !category || price == null || quantity == null) {
+    return NextResponse.json(
+      { error: 'Missing required fields' },
+      { status: 400 }
+    );
     }
 
     // Create new product
@@ -84,6 +85,8 @@ export async function GET(request: Request) {
     const priceMin = searchParams.get('priceMin');
     const priceMax = searchParams.get('priceMax');
     const search = searchParams.get('search');
+    const inStock = searchParams.get('inStock');
+
 
     // Build the query based on filters
     let query = `
@@ -98,8 +101,8 @@ export async function GET(request: Request) {
     let paramCount = 1;
 
     if (category) {
-      query += ` AND p.category = $${paramCount}`;
-      values.push(category);
+      query += ` AND p.category = ANY($${paramCount})`;
+      values.push(category.split(",")); // Split the comma-separated categories into an array
       paramCount++;
     }
 
@@ -124,6 +127,9 @@ export async function GET(request: Request) {
       paramCount++;
     }
 
+    if (inStock) {
+      query += ` AND p.quantity > 0`; // Only include products with quantity > 0
+    }
     query += ' ORDER BY p.created_at DESC';
 
     const result = await pool.query(query, values);

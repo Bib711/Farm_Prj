@@ -199,20 +199,13 @@ export function ProductsTable() {
       header: 'Status',
       cell: ({ row }) => {
         const product = row.original;
-        const quantity = product.quantity;
-        
-        if (quantity === 0) {
-          return (
-            <Badge variant="destructive">Out of Stock</Badge>
-          );
-        } else if (quantity < 20) {
-          return (
-            <Badge variant="outline">Low Stock</Badge>
-          );
+
+        if (!product.in_stock) {
+          return <Badge variant="destructive">Out of Stock</Badge>;
+        } else if (product.quantity < 20) {
+          return <Badge variant="outline">Low Stock</Badge>;
         } else {
-          return (
-            <Badge>In Stock</Badge>
-          );
+          return <Badge>In Stock</Badge>;
         }
       },
     },

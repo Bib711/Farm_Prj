@@ -23,15 +23,12 @@ interface ProductFormProps {
 }
 
 const CATEGORIES = [
-  'Vegetables',
-  'Fruits',
-  'Grains',
-  'Dairy',
-  'Meat',
-  'Poultry',
-  'Herbs',
-  'Other'
+  'seeds',
+  'fertilizers',
+  'equipment',
+  'pesticides'
 ];
+
 
 export function ProductForm({ initialData, mode }: ProductFormProps) {
   const [formData, setFormData] = useState({
@@ -50,7 +47,7 @@ export function ProductForm({ initialData, mode }: ProductFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
+    console.log("Submitted Data:", formData); 
     try {
       const token = localStorage.getItem('token');
       if (!token) {
