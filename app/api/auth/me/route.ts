@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import pool from '@/lib/db';
+import { cookies } from 'next/headers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'farmmarket';
 
@@ -31,16 +32,27 @@ export async function GET(req: Request) {
   console.log('Auth /me endpoint called');
   
   try {
-    // Get token from header
+    let token;
+    
+    // Check for token in Authorization header first
     const authHeader = req.headers.get('authorization');
     console.log('Auth header:', authHeader ? 'Present' : 'Missing');
     
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.log('No valid bearer token found');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+      console.log('Token found in header');
+    } else {
+      // If no Authorization header, check cookies
+      const cookieStore = await cookies(); // Add 'await' here
+      token = cookieStore.get('token')?.value;
+      console.log('Token in cookies:', token ? 'Present' : 'Missing');
+    }
+    
+    if (!token) {
+      console.log('No valid token found in header or cookies');
       return jsonResponse({ error: 'No token provided' }, 401);
     }
 
-    const token = authHeader.split(' ')[1];
     console.log('Token received, verifying...');
 
     try {

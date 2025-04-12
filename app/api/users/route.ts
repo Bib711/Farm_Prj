@@ -16,3 +16,12 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return NextResponse.json({ error: 'Error deleting user' }, { status: 500 });
   }
 }
+export async function GET(req: Request) {
+  try {
+    const result = await pool.query('SELECT id, name, email, role FROM users');
+    return NextResponse.json({ users: result.rows });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return NextResponse.json({ error: 'Error fetching users' }, { status: 500 });
+  }
+}

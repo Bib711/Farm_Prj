@@ -42,13 +42,22 @@ export default function DashboardPage() {
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch("/api/current-user") // Replace with your API endpoint to fetch current user's info
-      const data = await response.json()
-      setCurrentUser(data.user)
+      // No need to manually include token - cookies are sent automatically
+      const response = await fetch("/api/auth/me", {
+        credentials: 'include', // This ensures cookies are sent with the request
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch current user");
+      
+      const data = await response.json();
+      console.log("Current user data:", data);
+      
+      setCurrentUser(data.user);
     } catch (err) {
-      setError("Failed to load user data")
+      console.error("Error fetching current user:", err);
+      setError("Failed to load user data");
     }
-  }
+  };
 
   const handleDeleteUser = async (userId: string) => {
     try {

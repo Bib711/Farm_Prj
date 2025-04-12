@@ -35,6 +35,7 @@ export const config = {
     '/dashboard/:path*',
     '/marketplace/:path*',
     '/auth/:path*',
+    //'/api/:path*',
     // Exclude API routes from middleware to prevent redirect loops
     // '/api/auth/me',
   ],
