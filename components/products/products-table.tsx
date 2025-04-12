@@ -200,7 +200,8 @@ export function ProductsTable() {
       cell: ({ row }) => {
         const product = row.original;
 
-        if (!product.in_stock) {
+        // Check quantity first, then fallback to in_stock flag
+        if (product.quantity <= 0) {
           return <Badge variant="destructive">Out of Stock</Badge>;
         } else if (product.quantity < 20) {
           return <Badge variant="outline">Low Stock</Badge>;

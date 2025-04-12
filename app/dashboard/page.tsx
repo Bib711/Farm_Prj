@@ -10,7 +10,7 @@ import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { Overview } from "@/components/overview"
 import { RecentSales } from "@/components/recent-sales"
-import { MarketPage } from "@/components/products-table"
+import { ProductsTable } from "@/components/products/products-table"
 import { metadata } from "./metadata" // Import metadata
 
 interface User {
@@ -390,7 +390,7 @@ export default function DashboardPage() {
                 <CardDescription>Manage your product inventory and availability</CardDescription>
               </CardHeader>
               <CardContent>
-                <MarketPage />
+                <ProductsTable />
               </CardContent>
             </Card>
           </TabsContent>

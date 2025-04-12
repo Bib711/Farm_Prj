@@ -1,7 +1,7 @@
-// marketPage.tsx
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -29,8 +29,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
 
-// Assuming you have product data already fetched
+// Define the Product type based on your API response
 type Product = {
   id: number
   name: string
@@ -39,74 +40,6 @@ type Product = {
   quantity: number
   status: "In Stock" | "Low Stock" | "Out of Stock"
 }
-
-const data: Product[] = [
-  {
-    id: 1,
-    name: "Organic Tomato Seeds",
-    category: "Seeds",
-    price: 4.99,
-    quantity: 120,
-    status: "In Stock",
-  },
-  {
-    id: 2,
-    name: "Natural Fertilizer",
-    category: "Fertilizers",
-    price: 19.99,
-    quantity: 80,
-    status: "In Stock",
-  },
-  {
-    id: 3,
-    name: "Garden Trowel Set",
-    category: "Equipment",
-    price: 24.99,
-    quantity: 50,
-    status: "In Stock",
-  },
-  {
-    id: 4,
-    name: "Heirloom Carrot Seeds",
-    category: "Seeds",
-    price: 3.99,
-    quantity: 200,
-    status: "In Stock",
-  },
-  {
-    id: 5,
-    name: "Organic Pest Control",
-    category: "Pesticides",
-    price: 14.99,
-    quantity: 0,
-    status: "Out of Stock",
-  },
-  {
-    id: 6,
-    name: "Pruning Shears",
-    category: "Equipment",
-    price: 18.99,
-    quantity: 0,
-    status: "Out of Stock",
-  },
-  {
-    id: 7,
-    name: "Herb Garden Kit",
-    category: "Seeds",
-    price: 29.99,
-    quantity: 150,
-    status: "In Stock",
-  },
-  {
-    id: 8,
-    name: "Compost Bin",
-    category: "Equipment",
-    price: 34.99,
-    quantity: 15,
-    status: "Low Stock",
-  },
-  // other products...
-]
 
 export const columns: ColumnDef<Product>[] = [
   {
@@ -208,11 +141,62 @@ export const columns: ColumnDef<Product>[] = [
 ]
 
 export function MarketPage() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const { toast } = useToast()
+  const router = useRouter() 
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        
+        // No need to check for token here - middleware already redirects if needed
+        // Just make the fetch directly:
+        console.log("Fetching products");
+        
+        const response = await fetch('/api/products', {
+          // Include credentials to send cookies with the request
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch products: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("API Response:", data);
+        
+        const productsArray = Array.isArray(data) ? data : [];
+        const processedProducts = productsArray.map((product: any) => ({
+          ...product,
+          status: product.quantity > 20 
+            ? "In Stock" 
+            : product.quantity > 0 
+              ? "Low Stock" 
+              : "Out of Stock"
+        }));
+        
+        setProducts(processedProducts);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch products. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchProducts();
+  }, [toast]);
 
   const table = useReactTable({
-    data,
+    data: products,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -276,7 +260,13 @@ export function MarketPage() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  Loading products...
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
